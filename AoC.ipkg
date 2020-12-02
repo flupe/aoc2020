@@ -1,0 +1,6 @@
+package aoc2020
+
+depends = contrib
+
+modules = Day1
+        , Day2
