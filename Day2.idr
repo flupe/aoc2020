@@ -6,32 +6,25 @@ import Data.List.Elem
 import Data.List1
 import Data.Strings
 import Data.Bool.Xor
+import Common
 
 Chars : Type
 Chars = List Char
 
-data Policy = policy Char Nat Nat
+data Policy = policy Nat Nat Char
 
--- todo: make total
+parseLine : String -> Maybe (Policy, Chars)
+parseLine = parse $
+  (,) <$> (policy <$> nat <* char '-' <*> nat <* char ' ' <*> anyChar)
+      <*  string ": "
+      <*> rest
 
-partial
-parseLine : String -> (Policy, Chars)
-parseLine line =
-  let chars = unpack line in
-  let (popo  ::: [' ' :: word]) = splitOn ':' chars in
-  let (range ::: [[c]])         = splitOn ' ' popo  in
-  let (a     ::: b :: [])       = splitOn '-' range in
-  (policy c (toN a) (toN b), word)
-  where toN : Chars -> Nat
-        toN = stringToNatOrZ . pack
-
-partial
 main : IO ()
 main = do
   Right raw <- readFile "./inputs/02"
     | Left err => printLn err
 
-  let items = map parseLine (lines raw)
+  let items = mapMaybe parseLine (lines raw)
 
   countValid policy1 items
   countValid policy2 items
@@ -41,12 +34,12 @@ main = do
     countValid p = printLn . length . filter (uncurry p)
 
     policy1 : Policy -> Chars -> Bool
-    policy1 (policy c a b) pwd = a <= count && count <= b
+    policy1 (policy a b c) pwd = a <= count && count <= b
       where count : Nat
             count = foldr (\x, acc => if x == c then S acc else acc) 0 pwd
 
     policy2 : Policy -> Chars -> Bool
-    policy2 (policy c a b) pwd = xor (at a) (at b)
+    policy2 (policy a b c) pwd = xor (at a) (at b)
       where at : Nat -> Bool
             at Z     = False
             at (S k) = case indexElem k pwd of

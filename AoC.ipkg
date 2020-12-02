@@ -1,6 +1,8 @@
 package aoc2020
 
 depends = contrib
+        , TParsec
 
-modules = Day1
+modules = Common
+        , Day1
         , Day2
