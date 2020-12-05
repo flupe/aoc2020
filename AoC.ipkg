@@ -7,3 +7,4 @@ modules = Common
         , Day1
         , Day2
         , Day4
+        , Day5

@@ -134,3 +134,7 @@ nat = do (x ::: xs) <- some digit
 public export partial
 sepBy : (Alternative m, Monad m) => Parser m a -> Parser m b -> Parser m (List b)
 sepBy sep p = ((::) <$> p <*> ((sep *> sepBy sep p) <|> pure []))
+
+public export
+maximum : (Foldable t, Ord a) => a -> t a -> a
+maximum = foldr \x, y => if x > y then x else y
