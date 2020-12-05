@@ -2,6 +2,7 @@ module Common
 
 import Data.List
 import Data.List1
+import Data.Vect
 
 %default total
 
@@ -9,6 +10,14 @@ public export
 record Parser (m : Type -> Type) (a : Type) where
     constructor MkParser
     runParser : List Char -> m (a, List Char)
+
+public export
+void : Applicative m => m a -> m ()
+void x = x *> pure ()
+
+public export
+option : (Alternative m) => m a -> m (Maybe a)
+option p = (Just <$> p) <|> pure Nothing
 
 public export
 Functor m => Functor (Parser m) where
@@ -49,6 +58,10 @@ guard f p = MkParser \s => do (x, o) <- runParser p s
                                      else empty
 
 public export
+oneOf : (Alternative m, Monad m, Eq a) =>  List a -> Parser m a -> Parser m a
+oneOf l p = guard (\c => elemBy (==) c l) p
+
+public export
 char : (Alternative m, Monad m) => Char -> Parser m Char
 char c = guard (==c) anyChar
 
@@ -63,7 +76,8 @@ string s = chars (unpack s) *> pure s
 
 public export
 parse : (Alternative m, Monad m) => Parser m a -> String -> m a
-parse p s = map fst (runParser p (unpack s))
+parse p s = runParser p (unpack s) >>= \c => case c of (r, []) => pure r
+                                                       _       => empty
 
 public export
 digit : (Alternative m, Monad m) => Parser m Nat
@@ -90,6 +104,15 @@ rest : Applicative m => Parser m (List Char)
 rest = MkParser (pure . (,[]))
 
 public export
+fail : (Alternative m) => Parser m a
+fail = MkParser (const empty)
+
+public export
+repeat : Monad m => (n : Nat) -> Parser m a -> Parser m (Vect n a)
+repeat Z     p = pure []
+repeat (S n) p = (::) <$> p <*> repeat n p
+
+public export
 partial
 many : (Alternative m, Monad m) => Parser m a -> Parser m (List a)
 many p = ((::) <$> p <*> many p) <|> pure []
@@ -99,8 +122,15 @@ partial
 some : (Alternative m, Monad m) => Parser m a -> Parser m (List1 a)
 some p = (:::) <$> p <*> many p
 
+try : (Alternative m, Monad m) => Parser m a -> Parser m a
+
+
 public export
 partial
 nat : (Alternative m, Monad m) => Parser m Nat
 nat = do (x ::: xs) <- some digit
          pure (foldl (\x, y => x * 10 + y) x xs)
+
+public export partial
+sepBy : (Alternative m, Monad m) => Parser m a -> Parser m b -> Parser m (List b)
+sepBy sep p = ((::) <$> p <*> ((sep *> sepBy sep p) <|> pure []))
