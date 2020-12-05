@@ -3,6 +3,8 @@ module Common
 import Data.List
 import Data.List1
 import Data.Vect
+import Data.Fin
+import Data.Nat
 
 %default total
 
@@ -138,3 +140,14 @@ sepBy sep p = ((::) <$> p <*> ((sep *> sepBy sep p) <|> pure []))
 public export
 maximum : (Foldable t, Ord a) => a -> t a -> a
 maximum = foldr \x, y => if x > y then x else y
+
+public export
+toIndex : {n : Nat} -> Vect n Bool -> Fin (power 2 n)
+toIndex {n = Z}   []       = FZ
+toIndex {n = S n} (False :: t) =
+    weakenLTE (toIndex t) (lteTransitive (lteAddRight {m = Z} (power 2 n))
+                                         (plusLteMonotoneLeft _ _ _ LTEZero))
+
+toIndex {n = S n} (True :: t) =
+  rewrite plusZeroRightNeutral (power 2 n) in shift (power 2 n) (toIndex t)
+
