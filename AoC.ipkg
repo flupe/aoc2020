@@ -6,3 +6,4 @@ depends = contrib
 modules = Common
         , Day1
         , Day2
+        , Day4
